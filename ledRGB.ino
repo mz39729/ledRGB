@@ -1,8 +1,13 @@
 #include <ESP8266WiFi.h>
 #include <ESP8266WebServer.h>
+//#include <DNSServer.h>
+#include <ESP8266mDNS.h>
 
 const char *ssid = "*****";
 const char *password = "******";
+
+//DNSServer dnsServer;
+//const byte DNS_PORT = 53;
 
 int pinRojo = D3;  // Define el pin para el componente rojo del LED RGB
 int pinVerde = D2; // Define el pin para el componente verde del LED RGB
@@ -27,15 +32,39 @@ void setup() {
   }
   Serial.println("Conectado a la red WiFi");
 
+  // Configura y comienza el servidor DNS
+  //dnsServer.start(DNS_PORT, "*", WiFi.softAPIP());
+  //dnsServer.addDomain("ledrgn.local". WiFi.softAPIP());
+  
+  Serial.print("Dirección IP asignada: ");
+  Serial.println(WiFi.localIP());
+
+  if(!MDNS.begin("ledrgb")){
+    Serial.println("Error mDNS");
+    while(1){
+      delay(1000);
+      }
+    }
+
   // Maneja las solicitudes HTTP
   server.on("/", HTTP_GET, handleRoot);
   server.on("/color", HTTP_POST, handleColor);
   server.on("/encender", HTTP_GET, handleEncender);
   server.on("/apagar", HTTP_GET, handleApagar);
+
   server.begin();
+
+  MDNS.addService("http","tcp",80);
+
 }
 
 void loop() {
+#if defined(ESP8266)
+  MDNS.update();
+#endif
+  
+  // Captura cualquier solicitud DNS
+  //dnsServer.processNextRequest();
   server.handleClient();
 }
 
